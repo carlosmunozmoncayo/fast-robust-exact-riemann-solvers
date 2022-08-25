@@ -1,0 +1,14 @@
+cff-version: 1.0.0
+message: "Citing information"
+authors:
+  - family-names: Carlos
+    given-names: Muñoz Moncayo
+  - family-names: Manuel
+    given-names: Quezada de Luna
+  - family-names: David I.
+    given-names: Ketcheson
+    
+title: "Reproducibility repository for the paper 'Fast, Robust, Exact Riemann Solvers for the Shallow Water and Euler Equations'"
+version: 1.0.0
+doi: 10.5281/zenodo.7021617
+date-released: 2022-08-25
