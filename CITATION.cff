@@ -8,7 +8,7 @@ authors:
   - family-names: Ketcheson
     given-names: David I.
     
-title: "Reproducibility repository for the paper 'Fast, Robust, Exact Riemann Solvers for the Shallow Water and Euler Equations'"
+title: "Reproducibility repository for the paper 'A Comparative Study of Iterative Riemann Solvers for the Shallow Water and Euler Equations'"
 version: 1.0.0
 doi: 10.5281/zenodo.7021617
 date-released: 2022-08-25
