@@ -1,6 +1,6 @@
-Fast Robust Exact Riemann Solvers for the Shallow Water and Euler Equations
+A Comparative Study of Iterative Riemann Solvers for the Shallow Water and Euler Equations
 ===========================================================================
-This is a reproducibility repository for the paper **Fast, Robust, Exact Riemann Solvers for the Shallow Water and Euler Equations** by Carlos Muñoz Moncayo, Manuel Quezada de Luna, and David I. Ketcheson.
+This is a reproducibility repository for the paper **A Comparative Study of Iterative Riemann Solvers for the Shallow Water and Euler Equations** by Carlos Muñoz Moncayo, Manuel Quezada de Luna, and David I. Ketcheson.
 
 ### Dependencies
   - python (v3.8.9)
