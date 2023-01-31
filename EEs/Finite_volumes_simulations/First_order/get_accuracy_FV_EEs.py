@@ -7,8 +7,8 @@ from matplotlib import rc
 import numpy as np
 import os
 
-solver_list=["HLLE","Roe","exact"]
-path_list=["./_output_"+i for i in ["HLLE","Roe","exact"]]
+solver_list=["exact","HLLE","Roe"]
+path_list=["./_output_"+i for i in ["exact","HLLE","Roe"]]
 spacing_list=[(40,80),(13,26),(4,8),(1,2)]
 
 grid_list=[50*3**i for i in range(4)]
@@ -43,18 +43,20 @@ def main():
         for solver in solver_list:
             path="./_output_"+solver+"/"+str(grid)
             h,x,dx,nx=get_last_h(path)
-            h_fine,x_fine,dx_fine,nx_fine=get_last_h(path_fine(solver))
-            diff=h-coarse_from_fine(fine=h_fine,spacing=spacing_list[idx],len_coarse=len(h))
-            print(f"{solver}: {L2_grid_function_norm(x=diff,dx=dx)}")
+            h_fine,x_fine,dx_fine,nx_fine = get_last_h(path_fine(solver))
+            h_coarse = coarse_from_fine(fine=h_fine,spacing=spacing_list[idx],len_coarse=len(h))
+            diff = h-h_coarse          
+            print(f"{solver}: {round(100*(L2_grid_function_norm(x=diff,dx=dx)/L2_grid_function_norm(x=h_coarse,dx=dx)),4)}")
     print(f"L infty norm")
     for idx, grid in enumerate(grid_list):
         print(f"####Accuracy {grid} points####")
         for solver in solver_list:
             path="./_output_"+solver+"/"+str(grid)
             h,x,dx,nx=get_last_h(path)
-            h_fine,x_fine,dx_fine,nx_fine=get_last_h(path_fine(solver))
-            diff=h-coarse_from_fine(fine=h_fine,spacing=spacing_list[idx],len_coarse=len(h))
-            print(f"{solver}: {L_infty_grid_function_norm(x=diff)}")
+            h_fine,x_fine,dx_fine,nx_fine = get_last_h(path_fine(solver))
+            h_coarse = coarse_from_fine(fine=h_fine,spacing=spacing_list[idx],len_coarse=len(h))
+            diff = h-h_coarse 
+            print(f"{solver}: {round(100*(L_infty_grid_function_norm(x=diff)/L_infty_grid_function_norm(x=h_coarse)),4)}")
 
 if __name__=="__main__":
     main()
