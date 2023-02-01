@@ -13,12 +13,13 @@ subroutine pstar(n_data, rp_data,conv_criteria, tol, gamma, exec_time)
     double precision :: pStarNonVacuum, pStarNonVacuum_stagnation
     double precision :: pStarNonVacuum_AV, pStarNonVacuum_CC, pStarNonVacuum_PV
     double precision :: pStarNonVacuum_TR, pStarNonVacuum_TS, pStarNonVacuum_HLLE
+    double precision :: pStarAdaptive
     double precision :: a_l, a_r
     integer :: iterations, i
 
     double precision :: start_time, finish_time, exact
-    double precision :: app_AV, app_CC, app_PV, app_TR, app_TS, app_HLLE
-    double precision :: err_AV, err_CC, err_PV, err_TR, err_TS, err_HLLE
+    double precision :: app_AV, app_CC, app_PV, app_TR, app_TS, app_HLLE, app_AD
+    double precision :: err_AV, err_CC, err_PV, err_TR, err_TS, err_HLLE, err_AD
 
     integer :: counting
 
@@ -52,6 +53,8 @@ subroutine pstar(n_data, rp_data,conv_criteria, tol, gamma, exec_time)
                rp_data(i,3),rp_data(i,4),rp_data(i,5),rp_data(i,6),a_l,a_r,tol,iterations)
             app_HLLE=pStarNonVacuum_HLLE(gamma,rp_data(i,1),rp_data(i,2), &
                rp_data(i,3),rp_data(i,4),rp_data(i,5),rp_data(i,6),a_l,a_r,tol,iterations)
+            app_AD=pStarAdaptive(gamma,rp_data(i,1),rp_data(i,2), &
+               rp_data(i,3),rp_data(i,4),rp_data(i,5),rp_data(i,6),a_l,a_r,tol,iterations)
 
             !Find problems with two rarefactions approximation
             ! if (abs(app_TR-exact)/abs(exact)>100000) then
@@ -74,6 +77,8 @@ subroutine pstar(n_data, rp_data,conv_criteria, tol, gamma, exec_time)
             err_TR=err_TR+abs(app_TR-exact)/abs(exact)
             err_TS=err_TS+abs(app_TS-exact)/abs(exact)
             err_HLLE=err_HLLE+abs(app_HLLE-exact)/abs(exact)
+            err_AD=err_AD+abs(app_AD-exact)/abs(exact)
+
             !print *, dummy_p
         END do 
         call cpu_time(finish_time)
@@ -86,6 +91,7 @@ subroutine pstar(n_data, rp_data,conv_criteria, tol, gamma, exec_time)
         print *, "Error TR:", err_TR/(n_data +0.d0)
         print *, "Error TS:", err_TS/(n_data +0.d0)
         print *, "Error HLLE:", err_HLLE/(n_data +0.d0)
+        print *, "Error AD:", err_AD/(n_data +0.d0)
 
     else
         print *, "Convergence criteria not properly specified"
@@ -387,6 +393,112 @@ double precision function pStarNonVacuum_HLLE(gamma,pL,uL,rhoL,pR,uR,rhoR,aL,aR,
 END function pStarNonVacuum_HLLE
 
 
+double precision function pStarAdaptive(gamma,pL,uL,rhoL,pR,uR,rhoR,aL,aR,tol,iterations) 
+
+    implicit none
+
+    double precision, intent(in) :: gamma,pL,uL,rhoL,pR,uR,rhoR,aL,aR,tol
+    integer :: iterations
+
+    double precision :: CL,CR,BL,BR
+    double precision ::pMin, phiMin, TwoRarefactionInitialGuess, phi, phip, extra, ustar
+    double precision ::pMax, phiMax
+
+    !To count iterations required for a singe Riemann Problem
+    integer:: iterations_single_RP
+    !To decide whether we iterate or not
+    integer:: iterate
+
+    !Required for initial guess
+    double precision :: ppv, gs
+
+    !Our estimate for pstar
+    double precision :: p, phiR
+
+
+    !We use CL and CR instead of AL and AR to avoid confusion with sound speeds aL and aR
+    CL=2/((gamma+1)*rhoL)
+    CR=2/((gamma+1)*rhoR)
+    BL=(gamma-1)*pL/(gamma+1)
+    BR=(gamma-1)*pR/(gamma+1)
+
+    ! We estimate pstar from below, this is useful even if we need to iterate
+    pMin = min(pL,pR)
+    phiMin = phi(gamma,pMin,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)
+
+    iterate = 1 
+    iterations_single_RP= 0
+
+    if (0<=phiMin) then 
+        ! In this case both waves are rarefactions. The solution is explicit
+        pStarAdaptive = TwoRarefactionInitialGuess(gamma,pL,uL,rhoL,pR,uR,rhoR,aL,aR,tol)
+        iterate = 0
+
+    else 
+        pMax = max(pL,pR)
+        phiMax = phi(gamma,pMax,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)
+
+        if (phiMax < 0) then 
+            ! In this case pMax < pStar so both waves are shocks.
+            p = TwoRarefactionInitialGuess(gamma,pL,uL,rhoL,pR,uR,rhoR,aL,aR,tol) 
+            ! this estimate is guaranteed to be from the right 
+            phiR=phi(gamma,p,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)
+            p =(phiR*pMax-phiMax*p)/(phiR-phiMax)
+        else
+            ! Here we have one rarefaction and one shock 
+            ! A left estimate is pMin and a right estimate is min(pMax,p_TR)
+            p = min(pMax,TwoRarefactionInitialGuess(gamma,pL,uL,rhoL,pR,uR,rhoR,aL,aR,tol))
+            phiR=phi(gamma,p,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)
+            pStarAdaptive =(phiR*pMin-phiMin*p)/(phiR-phiMin) 
+            iterate = 0
+        END if
+    END if
+
+    if (iterate==1) then 
+        p = max(pMax,p-phi(gamma,p,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)/&
+            phip(gamma,p,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR))     
+        iterations=iterations+1
+
+        !Start iterative process 
+        do while(.true.)
+            
+            phiR = phi(gamma,p,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)
+            
+            !Check if we have reached the tolerance 
+            if (abs(phiR)<tol) then 
+                exit
+            END if
+
+            !Compute new estimates of pStar
+            p = p-phiR/&
+                phip(gamma,p,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)
+
+            iterations=iterations+1
+            iterations_single_RP=iterations_single_RP+1
+
+            if (isnan(p).or.isnan(phiR)) then 
+                print *, "aborted at", iterations_single_RP, "iterations by Nan"
+                print *, pL,uL,rhoL,pR,uR,rhoR
+                print*, "pstar reached: ", p
+                print*, "phiR, phipR:", phiR, phip(gamma,p,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)
+                call abort
+            END if
+            
+
+            if (iterations_single_RP>40) then
+                print *, "aborted at", iterations_single_RP, "iterations"
+                print *, pL,uL,rhoL,pR,uR,rhoR
+                print*, "pstar reached: ", p
+                print*, "phiR, phipR:", phiR, phip(gamma,p,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)
+                call abort  
+            END if
+
+        END do
+        ! return estimation of pStar
+        pStarAdaptive = p
+    END if
+    extra=uStar(gamma,p,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)
+END function pStarAdaptive
 
 double precision function pStarNonVacuum_stagnation(gamma,pL,uL,rhoL,pR,uR,rhoR,aL,aR,tol,iterations) 
 
