@@ -12,6 +12,7 @@ import modules.newton_PV as newton_PV
 import modules.newton_TR as newton_TR
 import modules.newton_TS as newton_TS
 import modules.newton_HLLE as newton_HLLE
+import modules.adaptive as adaptive
 
 
 random.seed(1)
@@ -52,18 +53,20 @@ gamma=1.4
 tol=1.0E-6
 print("Results tolerance 1.e-6")
 print("Time newton_TS: ",min([newton_TS.pstar(tol=tol,gamma=gamma,conv_criteria=1,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
-#print("Time newton_TR: ",min([newton_TR.pstar(tol=tol,gamma=gamma,conv_criteria=1,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
-#print("Time newton_AV: ",min([newton_AV.pstar(tol=tol,gamma=gamma,conv_criteria=1,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
-#print("Time newton_PV: ",min([newton_PV.pstar(tol=tol,gamma=gamma,conv_criteria=1,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
-#print("Time newton_CC: ",min([newton_CC.pstar(tol=tol,gamma=gamma,conv_criteria=1,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
+print("Time newton_TR: ",min([newton_TR.pstar(tol=tol,gamma=gamma,conv_criteria=1,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
+print("Time newton_AV: ",min([newton_AV.pstar(tol=tol,gamma=gamma,conv_criteria=1,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
+print("Time newton_PV: ",min([newton_PV.pstar(tol=tol,gamma=gamma,conv_criteria=1,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
+print("Time newton_CC: ",min([newton_CC.pstar(tol=tol,gamma=gamma,conv_criteria=1,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
 print("Time newton_HLLE: ",min([newton_HLLE.pstar(tol=tol,gamma=gamma,conv_criteria=1,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
+print("Time adaptive: ",min([adaptive.pstar(tol=tol,gamma=gamma,conv_criteria=1,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
 
 tol=1.0E-12
 print("Results tolerance 1.e-12")
 print("Time newton_TS: ",min([newton_TS.pstar(tol=tol,gamma=gamma,conv_criteria=1,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
-#print("Time newton_TR: ",min([newton_TR.pstar(tol=tol,gamma=gamma,conv_criteria=1,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
-#print("Time newton_AV: ",min([newton_AV.pstar(tol=tol,gamma=gamma,conv_criteria=1,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
-#print("Time newton_PV: ",min([newton_PV.pstar(tol=tol,gamma=gamma,conv_criteria=1,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
-#print("Time newton_CC: ",min([newton_CC.pstar(tol=tol,gamma=gamma,conv_criteria=1,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
+print("Time newton_TR: ",min([newton_TR.pstar(tol=tol,gamma=gamma,conv_criteria=1,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
+print("Time newton_AV: ",min([newton_AV.pstar(tol=tol,gamma=gamma,conv_criteria=1,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
+print("Time newton_PV: ",min([newton_PV.pstar(tol=tol,gamma=gamma,conv_criteria=1,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
+print("Time newton_CC: ",min([newton_CC.pstar(tol=tol,gamma=gamma,conv_criteria=1,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
 print("Time newton_HLLE: ",min([newton_HLLE.pstar(tol=tol,gamma=gamma,conv_criteria=1,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
+print("Time adaptive: ",min([adaptive.pstar(tol=tol,gamma=gamma,conv_criteria=1,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
 
