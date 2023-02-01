@@ -16,12 +16,12 @@ subroutine hstar(n_data, rp_data, tol, grav, exec_time)
 
     double precision :: hStarWetStates_AV,hStarWetStates_QA,hStarWetStates_TR
     double precision :: hStarWetStates_CC,hStarWetStates_TS, hStarWetStates_PV
-    double precision :: hStarWetStates_HLLE
+    double precision :: hStarWetStates_HLLE, hStarAdaptiveNoniterative
 
 
     double precision :: start_time, finish_time, dummy_h
-    double precision :: app_AV, app_CC, app_QA, app_TR, app_TS, app_PV, app_HLLE
-    double precision :: err_AV, err_CC, err_QA, err_TR, err_TS, err_PV, err_HLLE
+    double precision :: app_AV, app_CC, app_QA, app_TR, app_TS, app_PV, app_HLLE, app_ANI
+    double precision :: err_AV, err_CC, err_QA, err_TR, err_TS, err_PV, err_HLLE, err_ANI
     double precision :: exact
  
     iterations=0
@@ -32,6 +32,7 @@ subroutine hstar(n_data, rp_data, tol, grav, exec_time)
     err_PV=0.d0
     err_TS=0.d0
     err_HLLE=0.d0
+    err_ANI=0.d0 !Adaptive noniterative error
 
     !We use a convergence criteria based on the residual
     call cpu_time(start_time)
@@ -52,6 +53,9 @@ subroutine hstar(n_data, rp_data, tol, grav, exec_time)
                 rp_data(i,3), rp_data(i,4), tol,iterations)
         app_HLLE=hStarWetStates_HLLE(grav, rp_data(i,1), rp_data(i,2), &
                 rp_data(i,3), rp_data(i,4), tol,iterations)
+        
+        app_ANI=hStarAdaptiveNoniterative(grav, rp_data(i,1), rp_data(i,2), &
+                rp_data(i,3), rp_data(i,4), tol,iterations) !Adaptive noniterative approximation
 
         err_AV=err_AV+abs(app_AV-exact)/abs(exact)
         err_QA=err_QA+abs(app_QA-exact)/abs(exact)
@@ -60,6 +64,8 @@ subroutine hstar(n_data, rp_data, tol, grav, exec_time)
         err_TS=err_TS+abs(app_TS-exact)/abs(exact)
         err_PV=err_PV+abs(app_PV-exact)/abs(exact)
         err_HLLE=err_HLLE+abs(app_HLLE-exact)/abs(exact)
+        
+        err_ANI=err_ANI+abs(app_ANI-exact)/abs(exact)
     end do 
     call cpu_time(finish_time)
     exec_time=finish_time-start_time
@@ -71,6 +77,8 @@ subroutine hstar(n_data, rp_data, tol, grav, exec_time)
     print *, "Error TS:", err_TS/(n_data +0.d0)
     print *, "Error PV:", err_PV/(n_data +0.d0)
     print *, "Error HLLE:", err_HLLE/(n_data +0.d0)
+    
+    print *, "Error ANI:", err_ANI/(n_data +0.d0)
 
 
 end subroutine hstar
@@ -326,6 +334,37 @@ double precision function hStarWetStates_TS(g,hL,hR,uL,uR,tol,iterations)
 
 END function hStarWetStates_TS
 
+double precision function hStarAdaptiveNoniterative(g,hL,hR,uL,uR,tol,iterations)
+    !This function consider the case where both states are wet and gives an estimate on hStar 
+    implicit none
+    integer :: iterate, iterations, iterations_single_RP
+    double precision:: g,hL,hR,uL,uR,tol
+    double precision:: hMin, hMax, fMin, fMax
+    double precision:: h,phi, phip, phiR
+    double precision:: TwoRarefactionInitialGuess, SharpInitialGuess
+
+    ! We estimate hstar from below
+    hMin = min(hL,hR)
+    !hMax = max(hL,hR)
+    fMin = phi(g,hMin,hL,hR,uL,uR)
+    !fMax = phi(g,hMax,hL,hR,uL,uR)
+
+    if (0<=fMin) then 
+        ! In this case both waves are rarefactions. We know the solution in this case.
+        hStarAdaptiveNoniterative = TwoRarefactionInitialGuess(g,hL,hR,uL,uR)
+    else
+        hMax = max(hL,hR)
+        fMax = phi(g,hMax,hL,hR,uL,uR)
+        if (fMax<0) then
+            hStarAdaptiveNoniterative = SharpInitialGuess(g,hL,hR,uL,uR)
+        else
+            ! Here we have one rarefaction and one shock  
+            h = min(hMax,TwoRarefactionInitialGuess(g,hL,hR,uL,uR)) !upper bound, lower bound is hmin
+            phiR = phi(g,h,hL,hR,uL,uR)
+            hStarAdaptiveNoniterative = (phiR*hMin-fMin*h)/(phiR-fMin)
+        END if
+    END if
+END function hStarAdaptiveNoniterative
 
 double precision function yz(g, h, hz)
   implicit none
