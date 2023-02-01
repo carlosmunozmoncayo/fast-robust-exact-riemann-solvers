@@ -13,6 +13,7 @@ import modules.newton_TR as newton_TR
 import modules.newton_TS as newton_TS
 import modules.newton_PV as newton_PV
 import modules.newton_HLLE as newton_HLLE
+import modules.noniterative as noniterative
 
 
 
@@ -47,6 +48,7 @@ print("Time newton_AV: ",min([newton_AV.hstar(tol=tol,grav=grav,conv_criteria=co
 print("Time newton_QA: ",min([newton_QA.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
 print("Time newton_PV: ",min([newton_PV.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
 print("Time newton_HLLE: ",min([newton_HLLE.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
+print("Time noniterative: ",min([noniterative.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
 
 
 tol=1.0E-6
@@ -58,3 +60,4 @@ print("Time newton_AV: ",min([newton_AV.hstar(tol=tol,grav=grav,conv_criteria=co
 print("Time newton_QA: ",min([newton_QA.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
 print("Time newton_PV: ",min([newton_PV.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
 print("Time newton_HLLE: ",min([newton_HLLE.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
+print("Time noniterative: ",min([noniterative.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
