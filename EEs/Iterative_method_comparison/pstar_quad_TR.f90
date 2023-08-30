@@ -117,7 +117,8 @@ double precision function pStarNonVacuum(gamma,pL,uL,rhoL,pR,uR,rhoR,aL,aR,tol,i
         ! Before starting we improve the estimate from below via one 'classic' Newton iteration
         ! For this iteration we start with p2 which is the best estimate we have so far
         ! NOTE: due to the concavity of phi, the classic Newton iteration always estimates from below
-        p1 = max(p1,p2-phi(gamma,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)/phip(gamma,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR))     
+        phiR = phi(gamma,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)
+        p1 = max(p1,p2-phiR/phip(gamma,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR))     
         !Start iterative process 
         iterations_single_RP=0 !to know where to stop if diverges
         do while(.true.)
@@ -127,11 +128,10 @@ double precision function pStarNonVacuum(gamma,pL,uL,rhoL,pR,uR,rhoR,aL,aR,tol,i
             end if
 
             !Save old estimates of pstar 
-            p1_old = p1
+            !p1_old = p1
             p2_old = p2
             !Compute new estimates of pstar
-            p1 = p1FromQuadPhiFromAbove(gamma,p1,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)
-            p2 = p2FromQuadPhiFromBelow(gamma,p1,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)
+            p2 = p2FromQuadPhiFromBelow(gamma,p1,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR,phiR)
             iterations=iterations+1
             iterations_single_RP=iterations_single_RP+1
             !Evaluate depth function from the right 
@@ -280,7 +280,7 @@ double precision function p1FromQuadPhiFromAbove(gamma,p1,p2,pL,uL,rhoL,pR,uR,rh
                            (phip(gamma,p1,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)+dsqrt(Delta))
 END function p1FromQuadPhiFromAbove
 
-double precision function p2FromQuadPhiFromBelow(gamma,p1,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)
+double precision function p2FromQuadPhiFromBelow(gamma,p1,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR,phiR)
   ! We start considering two estimates of pStar. One from the left(p1) and one from the right(p2). 
   ! We use these estimates to construct (a priori) a quadratic approximation of phi from below. 
   ! This quad approximation is monotonically increasing and concave down (just as phi). 
@@ -288,9 +288,10 @@ double precision function p2FromQuadPhiFromBelow(gamma,p1,p2,pL,uL,rhoL,pR,uR,rh
   implicit none
   double precision :: gamma,p1,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR
   double precision :: Delta, phip, phi , phidd122
+  double precision :: phiR
   
   Delta = phip(gamma,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)**2.d0 - &
-          4.d0*phi(gamma,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)*phidd122(gamma,p1,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)
+          4.d0*phiR*phidd122(gamma,p1,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)
   if (Delta<0) then 
      print *, 'Delta < 0 when computing the root of the quad approx of phi from above'
      print *, "pL: ", pL, " pR: ", pR
@@ -298,7 +299,7 @@ double precision function p2FromQuadPhiFromBelow(gamma,p1,p2,pL,uL,rhoL,pR,uR,rh
      print *, 'Delta: ', Delta
      call abort
   END if
-  p2FromQuadPhiFromBelow = p2 - 2.d0*phi(gamma,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)/  &
+  p2FromQuadPhiFromBelow = p2 - 2.d0*phiR/  &
                            (phip(gamma,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)+dsqrt(Delta))
 
 END function p2FromQuadPhiFromBelow
