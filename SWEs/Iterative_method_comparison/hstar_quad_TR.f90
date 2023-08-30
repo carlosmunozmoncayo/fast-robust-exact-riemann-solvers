@@ -106,7 +106,8 @@ double precision function hStarWetStates(g,hL,hR,uL,uR,tol,iterations)
         ! Before starting we improve the estimate from below via one 'classic' Newton iteration
         ! For this iteration we start with hStarR which is the best estimate we have so far
         ! NOTE: due to the concavity of phi, the classic Newton iteration always estimates from below
-        hStarL = max(hStarL,hStarR-phi(g,hStarR,hL,hR,uL,uR)/phip(g,hStarR,hL,hR))     
+        phiR = phi(g,hStarR,hL,hR,uL,uR)
+        hStarL = max(hStarL,hStarR-phiR/phip(g,hStarR,hL,hR))     
         iterations=iterations+1
         !Start iterative process 
         do while(.true.)
@@ -115,11 +116,10 @@ double precision function hStarWetStates(g,hL,hR,uL,uR,tol,iterations)
                 exit
             end if
             !Save old estimates of hStar 
-            hStarL_old = hStarL
+            !hStarL_old = hStarL
             hStarR_old = hStarR
             !Compute new estimates of hStar
-            hStarL = hStarLFromQuadPhiFromAbove(g,hStarL_old,hStarR_old,hL,hR,uL,uR)
-            hStarR = hStarRFromQuadPhiFromBelow(g,hStarL_old,hStarR_old,hL,hR,uL,uR)
+            hStarR = hStarRFromQuadPhiFromBelow(g,hStarL,hStarR_old,hL,hR,uL,uR,phiR)
             iterations=iterations+1
             iterations_single_RP=iterations_single_RP+1
             !Evaluate depth function from the right 
@@ -248,7 +248,7 @@ double precision function hStarLFromQuadPhiFromAbove(g,hStarL,hStarR,hL,hR,uL,uR
   hStarLFromQuadPhiFromAbove = hStarL - 2.d0*phi(g,hStarL,hL,hR,uL,uR)/(phip(g,hStarL,hL,hR)+sqrt(Delta))
 END function hStarLFromQuadPhiFromAbove
 
-double precision function hStarRFromQuadPhiFromBelow(g,hStarL,hStarR,hL,hR,uL,uR)
+double precision function hStarRFromQuadPhiFromBelow(g,hStarL,hStarR,hL,hR,uL,uR,phiR)
   ! We start considering two estimates of hStar. One from the left and one from the right. 
   ! We use these estimates to construct (a priori) a quadratic approximation of phi from below. 
   ! This quad approximation is monotonically increasing and concave down (just as phi). 
@@ -256,8 +256,10 @@ double precision function hStarRFromQuadPhiFromBelow(g,hStarL,hStarR,hL,hR,uL,uR
   implicit none
   double precision :: g,hStarL,hStarR,hL,hR,uL,uR
   double precision :: Delta, phip, phi, phiDDiff2
+  double precision :: phiR
   
-  Delta = phip(g,hStarR,hL,hR)**2.d0 - 4.d0*phi(g,hStarR,hL,hR,uL,uR)*phiDDiff2(g,hStarL,hStarR,hL,hR,uL,uR)
+  !Delta = phip(g,hStarR,hL,hR)**2.d0 - 4.d0*phi(g,hStarR,hL,hR,uL,uR)*phiDDiff2(g,hStarL,hStarR,hL,hR,uL,uR)
+  Delta = phip(g,hStarR,hL,hR)**2.d0 - 4.d0*phiR*phiDDiff2(g,hStarL,hStarR,hL,hR,uL,uR)
   if (Delta<0) then 
      print *, "hstarL_old: ", hStarL, " hstarR_old: ", hStarR
      print *, "hL: ", hL, " hR: ", hR
@@ -266,6 +268,6 @@ double precision function hStarRFromQuadPhiFromBelow(g,hStarL,hStarR,hL,hR,uL,uR
      print *, 'Delta: ', Delta
      call abort
   END if
-  hStarRFromQuadPhiFromBelow = hStarR - 2.d0*phi(g,hStarR,hL,hR,uL,uR)/(phip(g,hStarR,hL,hR)+sqrt(Delta))
+  hStarRFromQuadPhiFromBelow = hStarR - 2.d0*phiR/(phip(g,hStarR,hL,hR)+sqrt(Delta))
 
 END function hStarRFromQuadPhiFromBelow
