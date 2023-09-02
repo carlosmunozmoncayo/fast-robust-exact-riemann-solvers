@@ -1,18 +1,17 @@
 ####################
 #IMPORTING MODULES
 ####################
-
+print("Importing modules...")
 import numpy as np
 import random
-
-
-
 import modules.newton_TS as newton_TS
 import modules.mod_newton_TS as mod_newton_TS
 import modules.ostrowski_newton_TS as ostrowski_newton_TS
 import modules.ostrowski_TS as ostrowski_TS
 import modules.quad_TR as quad_TR
-
+import modules.quad_below_TR as quad_below_TR
+import modules.linear_TR as linear_TR
+print("Done importing modules.")
 
 random.seed(1)
 
@@ -37,6 +36,8 @@ conv_criteria=1
 tol=1.0E-12
 print("Results tol 1.e-12")
 print("Time quad_TR: ",min([quad_TR.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
+print("Time quad_below_TR: ",min([quad_below_TR.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
+print("Time linear_TR: ",min([linear_TR.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
 print("Time ostrowski_TS: ",min([ostrowski_TS.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
 print("Time ostrowski_newton_TS: ",min([ostrowski_newton_TS.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
 print("Time newton_TS: ",min([newton_TS.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
@@ -45,6 +46,8 @@ print("Time mod_newton_TS: ",min([mod_newton_TS.hstar(tol=tol,grav=grav,conv_cri
 tol=1.0E-6
 print("Results tol 1.e-6")
 print("Time quad_TR: ",min([quad_TR.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
+print("Time quad_below_TR: ",min([quad_below_TR.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
+print("Time linear_TR: ",min([linear_TR.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
 print("Time ostrowski_TS: ",min([ostrowski_TS.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
 print("Time ostrowski_newton_TS: ",min([ostrowski_newton_TS.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
 print("Time newton_TS: ",min([newton_TS.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))

@@ -1,4 +1,5 @@
-! RS with Quadratic polynomials, 1 Newton step, and TR initial guess
+! RS with a single quadratic polynomial, 1 Newton step, and TR initial guess
+!The quadractic polynomial approximates phi from below between the two bounds
 ! =========================================================
 subroutine hstar(n_data, rp_data,conv_criteria, tol, grav, exec_time)
 ! =========================================================
@@ -97,16 +98,16 @@ double precision function hStarWetStates(g,hL,hR,uL,uR,tol,iterations)
 
     if (iterate==1) then 
         iterations_single_RP=0
-        ! The idea is to construct (a priori) a quadratic approx of phi from above and from below of phi
-        ! and find the root (a priori) of those approximations. 
-        ! Each root will provide new estimates of hStarL and hStarR.
+        ! The idea is to construct (a priori) a quadratic approx of phi  from below 
+        ! and find the root (a priori) of that approximation. 
+        ! The root will provide a new estimates of  hStarR.
         ! We iterate on this process until some tolerance is achieved. 
-        ! Finally, we use the estimate from the right to assure positivity. 
 
         ! Before starting we improve the estimate from below via one 'classic' Newton iteration
         ! For this iteration we start with hStarR which is the best estimate we have so far
         ! NOTE: due to the concavity of phi, the classic Newton iteration always estimates from below
-        hStarL = max(hStarL,hStarR-phi(g,hStarR,hL,hR,uL,uR)/phip(g,hStarR,hL,hR))     
+        phiR = phi(g,hStarR,hL,hR,uL,uR)
+        hStarL = max(hStarL,hStarR-phiR/phip(g,hStarR,hL,hR))     
         iterations=iterations+1
         !Start iterative process 
         do while(.true.)
@@ -115,16 +116,14 @@ double precision function hStarWetStates(g,hL,hR,uL,uR,tol,iterations)
                 exit
             end if
             !Save old estimates of hStar 
-            hStarL_old = hStarL
+            !hStarL_old = hStarL
             hStarR_old = hStarR
             !Compute new estimates of hStar
-            hStarL = hStarLFromQuadPhiFromAbove(g,hStarL_old,hStarR_old,hL,hR,uL,uR)
-            hStarR = hStarRFromQuadPhiFromBelow(g,hStarL_old,hStarR_old,hL,hR,uL,uR)
+            hStarR = hStarRFromQuadPhiFromBelow(g,hStarL,hStarR_old,hL,hR,uL,uR,phiR)
             iterations=iterations+1
             iterations_single_RP=iterations_single_RP+1
             !Evaluate depth function from the right 
             phiR = phi(g,hStarR,hL,hR,uL,uR)
-            !phiL = phi(g,hStarR,hL,hR,uL,uR)
 
             !Check if hStar or phii are NaN. 
             ! This is due to estimates from the left and from the right being the same (hStarL=hStarR)
@@ -227,28 +226,8 @@ double precision function phiDiff(g,hStarL,hStarR,hL,hR,uL,uR)
   end if
 END function phiDiff
 
-double precision function hStarLFromQuadPhiFromAbove(g,hStarL,hStarR,hL,hR,uL,uR)
-  ! We start considering two estimates of hStar. One from the left and one from the right. 
-  ! We use these estimates to construct (a priori) a quadratic approximation of phi from above. 
-  ! This quad approximation is monotonically increasing and concave down (just as phi). 
-  ! We find the root (a priori) of this quadratic approximation to obtain a new estimate of hStar from the left
-  implicit none
-  double precision :: g,hStarL,hStarR,hL,hR,uL,uR
-  double precision :: Delta, phip, phi, phiDDiff1
 
-  Delta = phip(g,hStarL,hL,hR)**2.d0 - 4.d0*phi(g,hStarL,hL,hR,uL,uR)*phiDDiff1(g,hStarL,hStarR,hL,hR,uL,uR)
-  if (Delta<0) then 
-     print *, "hstarL_old: ", hStarL, " hstarR_old: ", hStarR
-     print *, "hL: ", hL, " hR: ", hR
-     print *, "uL: ", uL, " uR: ", uR
-     print *, 'Delta < 0 when computing the root of the quad approx of phi from above'
-     print *, 'Delta: ', Delta
-     call abort
-  END if
-  hStarLFromQuadPhiFromAbove = hStarL - 2.d0*phi(g,hStarL,hL,hR,uL,uR)/(phip(g,hStarL,hL,hR)+sqrt(Delta))
-END function hStarLFromQuadPhiFromAbove
-
-double precision function hStarRFromQuadPhiFromBelow(g,hStarL,hStarR,hL,hR,uL,uR)
+double precision function hStarRFromQuadPhiFromBelow(g,hStarL,hStarR,hL,hR,uL,uR,phiR)
   ! We start considering two estimates of hStar. One from the left and one from the right. 
   ! We use these estimates to construct (a priori) a quadratic approximation of phi from below. 
   ! This quad approximation is monotonically increasing and concave down (just as phi). 
@@ -256,8 +235,10 @@ double precision function hStarRFromQuadPhiFromBelow(g,hStarL,hStarR,hL,hR,uL,uR
   implicit none
   double precision :: g,hStarL,hStarR,hL,hR,uL,uR
   double precision :: Delta, phip, phi, phiDDiff2
+  double precision :: phiR
   
-  Delta = phip(g,hStarR,hL,hR)**2.d0 - 4.d0*phi(g,hStarR,hL,hR,uL,uR)*phiDDiff2(g,hStarL,hStarR,hL,hR,uL,uR)
+  !Delta = phip(g,hStarR,hL,hR)**2.d0 - 4.d0*phi(g,hStarR,hL,hR,uL,uR)*phiDDiff2(g,hStarL,hStarR,hL,hR,uL,uR)
+  Delta = phip(g,hStarR,hL,hR)**2.d0 - 4.d0*phiR*phiDDiff2(g,hStarL,hStarR,hL,hR,uL,uR)
   if (Delta<0) then 
      print *, "hstarL_old: ", hStarL, " hstarR_old: ", hStarR
      print *, "hL: ", hL, " hR: ", hR
@@ -266,6 +247,6 @@ double precision function hStarRFromQuadPhiFromBelow(g,hStarL,hStarR,hL,hR,uL,uR
      print *, 'Delta: ', Delta
      call abort
   END if
-  hStarRFromQuadPhiFromBelow = hStarR - 2.d0*phi(g,hStarR,hL,hR,uL,uR)/(phip(g,hStarR,hL,hR)+sqrt(Delta))
+  hStarRFromQuadPhiFromBelow = hStarR - 2.d0*phiR/(phip(g,hStarR,hL,hR)+sqrt(Delta))
 
 END function hStarRFromQuadPhiFromBelow
