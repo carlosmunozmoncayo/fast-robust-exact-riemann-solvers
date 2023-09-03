@@ -36,15 +36,15 @@ names=["quad_TR","newton_TS","ostrowski_newton_TS","ostrowski_TS","mod_newton_TS
 n_runs=7
 grav=1.
 conv_criteria=1
-tol=1.0E-12
-print("Results tol 1.e-12")
-for name, modules in zip(names,modules):
-    print("############\nRunning "+name+"...")
-    print("Time "+name+": ",min([modules.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(n_runs)]))
-    print("############")
 tol=1.0E-6
 print("Results tol 1.e-6")
-for name, modules in zip(names,modules):
+for name, module in zip(names,modules):
     print("############\nRunning "+name+"...")
-    print("Time "+name+": ",min([modules.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(n_runs)]))
+    print("Time "+name+": ",min([module.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(n_runs)]))
+    print("############")
+tol=1.0E-12
+print("Results tol 1.e-12")
+for name, module in zip(names,modules):
+    print("############\nRunning "+name+"...")
+    print("Time "+name+": ",min([module.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(n_runs)]))
     print("############")
