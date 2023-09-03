@@ -20,7 +20,7 @@ lenmatrix_strong=2*10**6
 lenmatrix_weak=lenmatrix_strong*4
 lenmatrix=lenmatrix_strong+lenmatrix_weak
 
-
+print("Generating dataset of Riemann problems...")
 #Riemann problems with strong waves
 #matrix_strong=[[10**random.uniform(-4,4),10**random.uniform(-4,4),10**random.uniform(-2,2),-random.uniform(-2,2)] for i in range(lenmatrix_strong)]
 matrix_strong=[[10**random.uniform(-4,4),10**random.uniform(-4,4),10**random.uniform(-2,2),-10**random.uniform(-2,2)] for i in range(lenmatrix_strong)]
@@ -28,27 +28,23 @@ matrix_strong=[[10**random.uniform(-4,4),10**random.uniform(-4,4),10**random.uni
 matrix_weak=[[random.uniform(0.1,1),random.uniform(0.1,1),0,0] for i in range(lenmatrix_weak)]
 
 matrix=matrix_strong+matrix_weak
+print("Dataset generated")
 
 
-
+modules=[quad_TR,newton_TS,ostrowski_newton_TS,ostrowski_TS,mod_newton_TS,quad_below_TR,linear_TR]
+names=["quad_TR","newton_TS","ostrowski_newton_TS","ostrowski_TS","mod_newton_TS","quad_below_TR","linear_TR"]
+n_runs=7
 grav=1.
 conv_criteria=1
 tol=1.0E-12
 print("Results tol 1.e-12")
-print("Time quad_TR: ",min([quad_TR.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
-print("Time quad_below_TR: ",min([quad_below_TR.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
-print("Time linear_TR: ",min([linear_TR.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
-print("Time ostrowski_TS: ",min([ostrowski_TS.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
-print("Time ostrowski_newton_TS: ",min([ostrowski_newton_TS.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
-print("Time newton_TS: ",min([newton_TS.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
-print("Time mod_newton_TS: ",min([mod_newton_TS.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
-
+for name, modules in zip(names,modules):
+    print("############\nRunning "+name+"...")
+    print("Time "+name+": ",min([modules.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(n_runs)]))
+    print("############")
 tol=1.0E-6
 print("Results tol 1.e-6")
-print("Time quad_TR: ",min([quad_TR.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
-print("Time quad_below_TR: ",min([quad_below_TR.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
-print("Time linear_TR: ",min([linear_TR.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
-print("Time ostrowski_TS: ",min([ostrowski_TS.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
-print("Time ostrowski_newton_TS: ",min([ostrowski_newton_TS.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
-print("Time newton_TS: ",min([newton_TS.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
-print("Time mod_newton_TS: ",min([mod_newton_TS.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(7)]))
+for name, modules in zip(names,modules):
+    print("############\nRunning "+name+"...")
+    print("Time "+name+": ",min([modules.hstar(tol=tol,grav=grav,conv_criteria=conv_criteria,rp_data=matrix,n_data=lenmatrix) for i in range(n_runs)]))
+    print("############")
