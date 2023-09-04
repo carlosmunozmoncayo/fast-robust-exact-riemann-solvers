@@ -1,5 +1,5 @@
 ! Exact RS Euler equations using quadratic interpolation with
-!Hermite polynomials and Two Rarefactions initial guess
+!one Hermite polynomial and Two Rarefactions initial guess
 
 !This module receives a matrix rp_data of Riemann problems:
 !rp_data=[problem_1,problem_2,...], where
@@ -108,16 +108,16 @@ double precision function pStarNonVacuum(gamma,pL,uL,rhoL,pR,uR,rhoR,aL,aR,tol,i
     END if
 
     if (iterate==1) then 
-        ! The idea is to construct (a priori) a quadratic approx of phi from above and from below of phi
-        ! and find the root (a priori) of those approximations. 
-        ! Each root will provide new estimates of p1 and p2.
+        ! The idea is to construct (a priori) a quadratic approx of phi from below 
+        ! and find the root (a priori) of that approximation. 
+        ! Each root will provide the new estimate from above of pstar, p2.
         ! We iterate on this process until some tolerance is achieved. 
-        ! Finally, we use the estimate from the right to assure positivity. 
 
         ! Before starting we improve the estimate from below via one 'classic' Newton iteration
         ! For this iteration we start with p2 which is the best estimate we have so far
         ! NOTE: due to the concavity of phi, the classic Newton iteration always estimates from below
-        p1 = max(p1,p2-phi(gamma,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)/phip(gamma,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR))     
+        phiR = phi(gamma,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)
+        p1 = max(p1,p2-phiR/phip(gamma,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR))     
         !Start iterative process 
         iterations_single_RP=0 !to know where to stop if diverges
         do while(.true.)
@@ -127,11 +127,10 @@ double precision function pStarNonVacuum(gamma,pL,uL,rhoL,pR,uR,rhoR,aL,aR,tol,i
             end if
 
             !Save old estimates of pstar 
-            p1_old = p1
+            !p1_old = p1
             p2_old = p2
             !Compute new estimates of pstar
-            p1 = p1FromQuadPhiFromAbove(gamma,p1,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)
-            p2 = p2FromQuadPhiFromBelow(gamma,p1,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)
+            p2 = p2FromQuadPhiFromBelow(gamma,p1,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR,phiR)
             iterations=iterations+1
             iterations_single_RP=iterations_single_RP+1
             !Evaluate depth function from the right 
@@ -258,29 +257,8 @@ double precision function phidd12(gamma,p1,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,
     end if
 END function phidd12
 
-double precision function p1FromQuadPhiFromAbove(gamma,p1,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)
-  ! We start considering two estimates of pStar. One from the left (p1) and one from the right (p2). 
-  ! We use these estimates to construct (a priori) a quadratic approximation of phi from above. 
-  ! This quad approximation is monotonically increasing and concave down (just as phi). 
-  ! We find the root (a priori) of this quadratic approximation to obtain a new estimate of pStar from the left
-  implicit none
-  double precision :: gamma,p1,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR
-  double precision :: Delta, phip, phi, phidd112
 
-  Delta = phip(gamma,p1,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)**2.d0 -  &
-          4.d0*phi(gamma,p1,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)*phidd112(gamma,p1,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)
-  if (Delta<0) then 
-     print *, 'Delta < 0 when computing the root of the quad approx of phi from above'
-     print *, "pL: ", pL, " pR: ", pR
-     print *, "uL: ", uL, " uR: ", uR
-     print *, 'Delta: ', Delta
-     call abort
-  END if
-  p1FromQuadPhiFromAbove = p1 - 2.d0*phi(gamma,p1,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)/  &
-                           (phip(gamma,p1,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)+dsqrt(Delta))
-END function p1FromQuadPhiFromAbove
-
-double precision function p2FromQuadPhiFromBelow(gamma,p1,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)
+double precision function p2FromQuadPhiFromBelow(gamma,p1,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR,phiR)
   ! We start considering two estimates of pStar. One from the left(p1) and one from the right(p2). 
   ! We use these estimates to construct (a priori) a quadratic approximation of phi from below. 
   ! This quad approximation is monotonically increasing and concave down (just as phi). 
@@ -288,9 +266,10 @@ double precision function p2FromQuadPhiFromBelow(gamma,p1,p2,pL,uL,rhoL,pR,uR,rh
   implicit none
   double precision :: gamma,p1,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR
   double precision :: Delta, phip, phi , phidd122
+  double precision :: phiR
   
   Delta = phip(gamma,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)**2.d0 - &
-          4.d0*phi(gamma,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)*phidd122(gamma,p1,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)
+          4.d0*phiR*phidd122(gamma,p1,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)
   if (Delta<0) then 
      print *, 'Delta < 0 when computing the root of the quad approx of phi from above'
      print *, "pL: ", pL, " pR: ", pR
@@ -298,7 +277,7 @@ double precision function p2FromQuadPhiFromBelow(gamma,p1,p2,pL,uL,rhoL,pR,uR,rh
      print *, 'Delta: ', Delta
      call abort
   END if
-  p2FromQuadPhiFromBelow = p2 - 2.d0*phi(gamma,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)/  &
+  p2FromQuadPhiFromBelow = p2 - 2.d0*phiR/  &
                            (phip(gamma,p2,pL,uL,rhoL,pR,uR,rhoR,aL,aR,CL,CR,BL,BR)+dsqrt(Delta))
 
 END function p2FromQuadPhiFromBelow

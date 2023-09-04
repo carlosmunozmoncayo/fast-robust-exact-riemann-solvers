@@ -1,4 +1,6 @@
-! RS with Quadratic polynomials, 1 Newton step, and TR initial guess
+! RS with Linear polynomials, 1 Newton step, and TR initial guess
+!The linear polynomial approximates phi from below bewteen two bounds of hstar
+!Its root provides an estimate of hstar from above
 ! =========================================================
 subroutine hstar(n_data, rp_data,conv_criteria, tol, grav, exec_time)
 ! =========================================================
@@ -26,7 +28,7 @@ subroutine hstar(n_data, rp_data,conv_criteria, tol, grav, exec_time)
     end do 
     call cpu_time(finish_time)
     exec_time=finish_time-start_time
-    print *,"Iterations Quadratic Polynomails TR: ", iterations/(n_data +0.d0)
+    print *,"Iterations Linear Polynomails TR: ", iterations/(n_data +0.d0)
 
 end subroutine hstar
 
@@ -63,6 +65,7 @@ double precision function hStarWetStates(g,hL,hR,uL,uR,tol,iterations)
     double precision:: TwoRarefactionInitialGuess
     double precision:: hStarR, hStarL,hStarR_old,hStarL_old
     double precision:: hStarLFromQuadPhiFromAbove, hStarRFromQuadPhiFromBelow
+    double precision:: hStarRFromLinearPhiFromBelow, phiL
     ! We estimate hstar from below
     hMin = min(hL,hR)
     hMax = max(hL,hR)
@@ -92,21 +95,14 @@ double precision function hStarWetStates(g,hL,hR,uL,uR,tol,iterations)
         ! Here we have one rarefaction and one shock 
         ! We need to iterate. Here two estimates from the left and right are: 
         hStarL = hMin
-        hStarR = min(hMax,TwoRarefactionInitialGuess(g,hL,hR,uL,uR)) !hMax is enough but let's try to get closer to hStar
+        hStarR = min(hMax,TwoRarefactionInitialGuess(g,hL,hR,uL,uR)) 
     END if
 
     if (iterate==1) then 
         iterations_single_RP=0
-        ! The idea is to construct (a priori) a quadratic approx of phi from above and from below of phi
-        ! and find the root (a priori) of those approximations. 
-        ! Each root will provide new estimates of hStarL and hStarR.
-        ! We iterate on this process until some tolerance is achieved. 
-        ! Finally, we use the estimate from the right to assure positivity. 
-
-        ! Before starting we improve the estimate from below via one 'classic' Newton iteration
-        ! For this iteration we start with hStarR which is the best estimate we have so far
-        ! NOTE: due to the concavity of phi, the classic Newton iteration always estimates from below
-        hStarL = max(hStarL,hStarR-phi(g,hStarR,hL,hR,uL,uR)/phip(g,hStarR,hL,hR))     
+        phiR = phi(g,hStarR,hL,hR,uL,uR)
+        hStarL = max(hStarL,hStarR-phiR/phip(g,hStarR,hL,hR))    
+        phiL = phi(g,hStarL,hL,hR,uL,uR) 
         iterations=iterations+1
         !Start iterative process 
         do while(.true.)
@@ -115,16 +111,14 @@ double precision function hStarWetStates(g,hL,hR,uL,uR,tol,iterations)
                 exit
             end if
             !Save old estimates of hStar 
-            hStarL_old = hStarL
+            !hStarL_old = hStarL
             hStarR_old = hStarR
             !Compute new estimates of hStar
-            hStarL = hStarLFromQuadPhiFromAbove(g,hStarL_old,hStarR_old,hL,hR,uL,uR)
-            hStarR = hStarRFromQuadPhiFromBelow(g,hStarL_old,hStarR_old,hL,hR,uL,uR)
+            hStarR = hStarRFromLinearPhiFromBelow(g,hStarL,hStarR,hL,hR,uL,uR,phiR,phiL)
             iterations=iterations+1
             iterations_single_RP=iterations_single_RP+1
             !Evaluate depth function from the right 
             phiR = phi(g,hStarR,hL,hR,uL,uR)
-            !phiL = phi(g,hStarR,hL,hR,uL,uR)
 
             !Check if hStar or phii are NaN. 
             ! This is due to estimates from the left and from the right being the same (hStarL=hStarR)
@@ -179,93 +173,19 @@ double precision function phi(g,h,hL,hR,uL,uR)
     phi = fL + fR + uR - uL
 END function phi
 
-double precision function phip(g,h,hL,hR)
-    !Derivative of depth function phi'(h) = f'(h,hL,uL) + f'(h,hR,uR)
-    implicit none
-    double precision :: g,h,hL,hR
-    double precision :: fpL, fpR
-    ! Compute f'(h,hL,uL)
-    if (h<=hL) then 
-        fpL = sqrt(g/h) 
-    else 
-        fpL = g*(2.d0*h**2+h*hL+hL**2)/(2.d0*sqrt(2.d0*g)*h**2*hL*sqrt(1/h+1/hL))
-    END if
-    ! Compute f'(h,hR,uR) 
-    if (h<=hR) then 
-        fpR = sqrt(g/h) 
-    else 
-        fpR = g*(2.d0*h**2+h*hR+hR**2)/(2.d0*sqrt(2.d0*g)*h**2*hR*sqrt(1/h+1/hR))
-    END if
-    phip = fpL + fpR  
-END function phip
 
-double precision function phiDDiff1(g,hStarL,hStarR,hL,hR,uL,uR)
-  ! Second divided difference phi[hStarL,hStarL,hStarR]
-  implicit none
-  double precision :: g,hStarL,hStarR,hL,hR,uL,uR
-  double precision :: phiDiff,phip
-  phiDDiff1 = (phiDiff(g,hStarL,hStarR,hL,hR,uL,uR) - phip(g,hStarL,hL,hR))/(hStarR-hStarL)
-END function phiDDiff1
-
-double precision function phiDDiff2(g,hStarL,hStarR,hL,hR,uL,uR) 
-  ! Second divided difference phi[hStarL,hStarR,hStarR]
-  implicit none
-  double precision :: g,hStarL,hStarR,hL,hR,uL,uR
-  double precision :: phip, phiDiff
-  phiDDiff2 = (phip(g,hStarR,hL,hR) - phiDiff(g,hStarL,hStarR,hL,hR,uL,uR))/(hStarR-hStarL)
-END function phiDDiff2
-
-double precision function phiDiff(g,hStarL,hStarR,hL,hR,uL,uR)
-  ! First divided difference phi[hStarL,hStarR]
-  implicit none
-  double precision :: g,hStarL,hStarR,hL,hR,uL,uR
-  double precision :: phip, phi
-  if (hstarL == hstarR) then
-   phiDiff= phip(g,hstarL,hL,hR)
-  else
-  phiDiff = (phi(g,hStarR,hL,hR,uL,uR) - phi(g,hStarL,hL,hR,uL,uR))/(hStarR-hStarL)
-  end if
-END function phiDiff
-
-double precision function hStarLFromQuadPhiFromAbove(g,hStarL,hStarR,hL,hR,uL,uR)
+double precision function hStarRFromLinearPhiFromBelow(g,hStarL,hStarR,hL,hR,uL,uR,phiR,phiL)
   ! We start considering two estimates of hStar. One from the left and one from the right. 
-  ! We use these estimates to construct (a priori) a quadratic approximation of phi from above. 
-  ! This quad approximation is monotonically increasing and concave down (just as phi). 
-  ! We find the root (a priori) of this quadratic approximation to obtain a new estimate of hStar from the left
-  implicit none
-  double precision :: g,hStarL,hStarR,hL,hR,uL,uR
-  double precision :: Delta, phip, phi, phiDDiff1
-
-  Delta = phip(g,hStarL,hL,hR)**2.d0 - 4.d0*phi(g,hStarL,hL,hR,uL,uR)*phiDDiff1(g,hStarL,hStarR,hL,hR,uL,uR)
-  if (Delta<0) then 
-     print *, "hstarL_old: ", hStarL, " hstarR_old: ", hStarR
-     print *, "hL: ", hL, " hR: ", hR
-     print *, "uL: ", uL, " uR: ", uR
-     print *, 'Delta < 0 when computing the root of the quad approx of phi from above'
-     print *, 'Delta: ', Delta
-     call abort
-  END if
-  hStarLFromQuadPhiFromAbove = hStarL - 2.d0*phi(g,hStarL,hL,hR,uL,uR)/(phip(g,hStarL,hL,hR)+sqrt(Delta))
-END function hStarLFromQuadPhiFromAbove
-
-double precision function hStarRFromQuadPhiFromBelow(g,hStarL,hStarR,hL,hR,uL,uR)
-  ! We start considering two estimates of hStar. One from the left and one from the right. 
-  ! We use these estimates to construct (a priori) a quadratic approximation of phi from below. 
-  ! This quad approximation is monotonically increasing and concave down (just as phi). 
-  ! We find the root (a priori) of this quadratic approximation to obtain a new estimate of hStar from the right
+  ! We use these estimates to construct (a priori) a linear approximation of phi from below. 
+  ! This linear approximation is monotonically increasing. 
+  ! We find the root (a priori) of this linear approximation to obtain a new estimate of hStar from the right
   implicit none
   double precision :: g,hStarL,hStarR,hL,hR,uL,uR
   double precision :: Delta, phip, phi, phiDDiff2
-  
-  Delta = phip(g,hStarR,hL,hR)**2.d0 - 4.d0*phi(g,hStarR,hL,hR,uL,uR)*phiDDiff2(g,hStarL,hStarR,hL,hR,uL,uR)
-  if (Delta<0) then 
-     print *, "hstarL_old: ", hStarL, " hstarR_old: ", hStarR
-     print *, "hL: ", hL, " hR: ", hR
-     print *, "uL: ", uL, " uR: ", uR
-     print *, 'Delta < 0 when computing the root of the quad approx of phi from below'
-     print *, 'Delta: ', Delta
-     call abort
-  END if
-  hStarRFromQuadPhiFromBelow = hStarR - 2.d0*phi(g,hStarR,hL,hR,uL,uR)/(phip(g,hStarR,hL,hR)+sqrt(Delta))
+  double precision :: phiR
+  double precision :: phiL, slope
 
-END function hStarRFromQuadPhiFromBelow
+  slope = (phiR - phiL)/(hStarR - hStarL)
+  hStarRFromLinearPhiFromBelow = hStarR - phiR/slope
+END function hStarRFromLinearPhiFromBelow
+
